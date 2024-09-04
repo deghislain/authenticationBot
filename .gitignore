@@ -1,0 +1,7 @@
+.streamlit/
+*.toml
+.venv
+**/doc
+*.txt
+*.pyc
+*.png
