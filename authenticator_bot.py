@@ -1,12 +1,13 @@
+import re
+
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 import streamlit as st
 import service_info_extractor as serv_ext
-
-
-login_microservice_url = "http://127.0.0.1:8080/login"
+from login_process_handler import process_login
+import ast
 
 
 def get_the_welcome_prompt(human_input):
@@ -72,6 +73,18 @@ def get_the_model(prompt):
     return llm_chain
 
 
+def parse_service_info(serv_info):
+    try:
+        service_info_dict = ast.literal_eval(serv_info)
+        if isinstance(service_info_dict, dict):
+            return service_info_dict
+        else:
+            print("The string does not represent a dictionary.")
+    except (ValueError, SyntaxError) as e:
+        print("Error parsing string:", e)
+    return {}
+
+
 input = st.chat_input("Say hi to start a new conversation")
 if input:
     welcome_prompt = get_the_welcome_prompt(input)
@@ -79,5 +92,12 @@ if input:
     response = llm_chain.predict(human_input=input)
     chat_history = st.session_state['chat_history']
     chat_history.extend([input, response])
-    info = serv_ext.get_service_info()
+    service_info = serv_ext.get_service_info()
+    if service_info != "":
+        service_info_dict = parse_service_info(service_info)
+        service_name = service_info_dict["service"]
+        if re.search("[Ll]ogin", service_name):
+            result = process_login(service_info_dict)
+            chat_history.extend([input, result])
+
     display_chat_history()
