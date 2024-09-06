@@ -3,10 +3,11 @@ from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 import streamlit as st
-import re
+import service_info_extractor as serv_ext
 
 
 login_microservice_url = "http://127.0.0.1:8080/login"
+
 
 def get_the_welcome_prompt(human_input):
     if 'chat_history' not in st.session_state:
@@ -15,7 +16,25 @@ def get_the_welcome_prompt(human_input):
     chat_history = st.session_state['chat_history']
     template = f"""
                You are chatbot responsible for managing the user authentication process.
+               You provide the following 2 services:
+               1-login service
+               2-user registration service
+               
                You start welcoming the user, provide a list of your services, then you ask what you can do for him. 
+               
+               For the loging service follow these steps:
+               Request Username: Start by asking the user to provide their username.
+               Request Password: Once the username is provided, ask the user to enter their password.
+               
+               And for the user registration service please guide the user through these steps:
+               Request Username: Ask for their desired username.
+               Request First Name: Ask for their first name.
+               Request Last Name: Request their last name.
+               Request Email: Collect their email address.
+               Request Phone Number: Ask for their phone number.
+               Request Address: ask for their address.
+               Request Address: Finally, prompt them to create a secure password.
+               
                Ensure a smooth user experience by providing clear instructions and feedback throughout the process.
                Be concise.
 
@@ -24,6 +43,7 @@ def get_the_welcome_prompt(human_input):
            Chatbot:"""
 
     return PromptTemplate(input_variables=["chat_history", "human_input"], template=template)
+
 
 def display_chat_history():
     chat_history = st.session_state['chat_history']
@@ -36,13 +56,6 @@ def display_chat_history():
             output = st.chat_message("assistant")
             output.write(m)
         count += 1
-
-
-def select_process(input):
-    if re.search('login', input):
-        return "login"
-    elif re.search('(new account|register)', input):
-        return "registration"
 
 
 def get_the_model(prompt):
@@ -59,38 +72,6 @@ def get_the_model(prompt):
     return llm_chain
 
 
-def get_the_conversation():
-    chat_history = st.session_state['chat_history']
-    index = 0
-    conversation = ""
-    if len(chat_history) >= 3:
-        for msg in chat_history:
-            if index % 2 == 0:
-                conversation += msg + "\n"
-            else:
-                conversation += msg + "\n"
-            index += 1
-    return conversation
-
-
-def get_the_service_name():
-    conversation = get_the_conversation()
-    print(conversation)
-    if conversation != "":
-        prompt = f"""
-            Given the following conversation between an user and its assistant return the name
-            of the service that the user is looking for.
-            
-            the conversation is here:
-            {conversation}
-            You must only return the name of the service.
-            """
-        print("prompt******************", prompt)
-        llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1", temperature=0)
-        response = llm.invoke(prompt)
-        print("response----------------------------", response.content)
-
-
 input = st.chat_input("Say hi to start a new conversation")
 if input:
     welcome_prompt = get_the_welcome_prompt(input)
@@ -98,5 +79,5 @@ if input:
     response = llm_chain.predict(human_input=input)
     chat_history = st.session_state['chat_history']
     chat_history.extend([input, response])
-    get_the_service_name()
+    info = serv_ext.get_service_info()
     display_chat_history()
