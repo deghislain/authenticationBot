@@ -4,10 +4,13 @@ from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_openai import ChatOpenAI
 import streamlit as st
 import service_info_extractor as serv_ext
 from login_process_handler import process_login
+from registration_process_handler import create_new_account
 import ast
+import os
 
 
 def get_the_welcome_prompt(human_input):
@@ -27,14 +30,18 @@ def get_the_welcome_prompt(human_input):
                Request Username: Start by asking the user to provide their username.
                Request Password: Once the username is provided, ask the user to enter their password.
                
+               FOR THE login SERVICE, MAKE SURE THAT THE USER HAS PROVIDED: username and password.
+               
                And for the user registration service please guide the user through these steps:
                Request Username: Ask for their desired username.
                Request First Name: Ask for their first name.
                Request Last Name: Request their last name.
-               Request Email: Collect their email address.
+               Request Email: Request their email.
                Request Phone Number: Ask for their phone number.
-               Request Address: ask for their address.
-               Request Address: Finally, prompt them to create a secure password.
+               Request Home Address: ask for their home address.
+               Request Password: Finally, prompt them to create a secure password.
+               FOR THE registration SERVICE, MAKE SURE THAT THE USER HAS PROVIDED: in the following order:
+               username, first name, last name, email, phone number, home address and password.
                
                Ensure a smooth user experience by providing clear instructions and feedback throughout the process.
                Be concise.
@@ -62,7 +69,14 @@ def display_chat_history():
 def get_the_model(prompt):
     memory = ConversationBufferMemory(memory_key="chat_history")
 
-    llm = ChatNVIDIA(model="nv-mistralai/mistral-nemo-12b-instruct", temperature=0)
+    #llm = ChatNVIDIA(model="nv-mistralai/mistral-nemo-12b-instruct", temperature=0)
+    llm = ChatOpenAI(
+        openai_api_base="https://api.groq.com/openai/v1",
+        openai_api_key=os.environ['GROQ_API_KEY'],
+        model_name="llama-3.1-70b-versatile",
+        temperature=0,
+        max_tokens=1000,
+    )
 
     llm_chain = LLMChain(
         llm=llm,
@@ -73,7 +87,8 @@ def get_the_model(prompt):
     return llm_chain
 
 
-def parse_service_info(serv_info):
+def retrieve_service_info(serv_info):
+    print("retrieve_service_info************************ ", serv_info)
     try:
         service_info_dict = ast.literal_eval(serv_info)
         if isinstance(service_info_dict, dict):
@@ -92,12 +107,40 @@ if input:
     response = llm_chain.predict(human_input=input)
     chat_history = st.session_state['chat_history']
     chat_history.extend([input, response])
-    service_info = serv_ext.get_service_info()
+    service_info = ""
+    try:
+        service_info = serv_ext.get_service_info(response)
+    except Exception as ex:
+        chat_history.extend([input, "Error while calling the AI model, the server might be down, try later"])
+        print("Error while calling the model", ex)
+
+    print("service_info = ", service_info)
     if service_info != "":
-        service_info_dict = parse_service_info(service_info)
-        service_name = service_info_dict["service"]
-        if re.search("[Ll]ogin", service_name):
-            result = process_login(service_info_dict)
-            chat_history.extend([input, result])
+        service_info_dict = retrieve_service_info(service_info)
+        print("service_info_dict ", service_info_dict)
+        if service_info_dict:
+            service_name = service_info_dict["service_name"]
+            if re.search("[Ll]ogin", service_name):
+                result = process_login(service_info_dict)
+                if result == "Success":
+                    chat_history = []
+                    chat_history.extend([input, "Authentication successfully completed. "
+                                                "Say hi to start a new conversation."])
+                    st.session_state['chat_history'] = chat_history
+                else:
+                    chat_history.extend([input, result])
+            else:
+                result = create_new_account(service_info_dict)
+
+                if result == "Success":
+                    print("result******************************************************", result)
+                    chat_history = []
+                    chat_history.extend([input, "Congratulation for the creation of your new account. "
+                                                "Say hi to start a new conversation"])
+                    st.session_state['chat_history'] = chat_history
+                else:
+                    chat_history.extend([input, result])
+        else:
+            chat_history.extend([input, "Error while parsing the service information"])
 
     display_chat_history()

@@ -1,21 +1,5 @@
 [
     {
-        "user_id": "5163",
-        "username": "armelo",
-        "password": "21cb49cc8388447a9d98996c542817139abd072fd7c44364804de9ee6d8e435a",
-        "firstname": "Armelo",
-        "lastname": "Modem",
-        "email": "mel@pm.me"
-    },
-    {
-        "user_id": "2451",
-        "username": "mel",
-        "password": "melpass",
-        "firstname": "deghis",
-        "lastname": "mel",
-        "email": "mel@pm.me"
-    },
-    {
         "user_id": "1b1ab84e-a17e-4e60-b93d-d29b10d63dd2",
         "username": "armelo",
         "password": "6fad759b3da1f3db7499d0a53d7263d14c524a0b7f404c1c8019b2544d5d64c4",
@@ -24,5 +8,25 @@
         "email": "doe@pm.me",
         "phone_number": "2587412123",
         "address": "3 Larry street, Halifax, Nova, B4L0H1"
+    },
+    {
+        "user_id": "fb651b35-4132-4ca6-963f-8771b1983e62",
+        "username": "demelo",
+        "password": "d93c735b016698d9bfbbdf00d7ef6d097b47cc847db6fd8ab2890a7d01e016b1",
+        "firstname": "melo",
+        "lastname": "melimelo",
+        "email": "melo@pm.me",
+        "phone_number": "+14782569874",
+        "address": "1 Larry, Halifax, Nova, N1M2L0"
+    },
+    {
+        "user_id": "a7b7a6d1-ee84-42b7-b072-7ff7b94dbbfd",
+        "username": "melimelo",
+        "password": "85b02aa2c06b0f4c02d0fc7fa166bfc9c7ba8d55c282037c9aac88fb669c06b9",
+        "firstname": "demelo",
+        "lastname": "demeli",
+        "email": "demeli@pm.me",
+        "phone_number": "+1472587269",
+        "address": "1 larry, Halifax, Nova, 3K7L1M0"
     }
 ]

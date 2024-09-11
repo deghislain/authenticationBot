@@ -14,7 +14,7 @@ IMAGE_ISSUES_MSG = ("You did not pass the image verification process. Please ens
 
 CREDENTIALS_ERROR_MSG = "Invalid username or password"
 AUTHENTICATION_ERROR_MSG = "Error during the authentication process. Please, try again later"
-SUCCESSFUL_MSG = "Authentication successfully completed. Say hi to start a new conversation.."
+SUCCESSFUL_MSG = "Success"
 
 
 def image_verification():
@@ -43,7 +43,7 @@ def user_authentication(username, password):
 
 
 def process_login(login_info_dict):
-    print("process_login START", login_info_dict)
+    print("process_login START")
     if image_verification():
         username = login_info_dict["parameters"]["username"]
         password = login_info_dict["parameters"]["password"]
@@ -57,6 +57,7 @@ def process_login(login_info_dict):
             except Exception as ex:
                 print("An error occurred during your login", ex)
                 return AUTHENTICATION_ERROR_MSG
-
+        else:
+            return CREDENTIALS_ERROR_MSG
     else:
         return IMAGE_ISSUES_MSG
