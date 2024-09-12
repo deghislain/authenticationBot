@@ -12,6 +12,9 @@ from registration_process_handler import create_new_account
 import ast
 import os
 
+AI_ERROR_MSG = "Error while calling the AI model, the server might be down. Try again later"
+PARSING_SERVICE_INFO_ERROR_MSG = "Error while parsing the service info details. Say hi to restart"
+
 
 def get_the_welcome_prompt(human_input):
     if 'chat_history' not in st.session_state:
@@ -57,12 +60,13 @@ def display_chat_history():
     chat_history = st.session_state['chat_history']
     count = 0
     for m in chat_history:
-        if count % 2 == 0:
-            output = st.chat_message("user")
-            output.write(m)
-        else:
-            output = st.chat_message("assistant")
-            output.write(m)
+        if m != "":
+            if count % 2 == 0:
+                output = st.chat_message("user")
+                output.write(m)
+            else:
+                output = st.chat_message("assistant")
+                output.write(m)
         count += 1
 
 
@@ -100,6 +104,13 @@ def retrieve_service_info(serv_info):
     return {}
 
 
+def reset_chat_history(result):
+    chat_history = []
+    st.session_state['chat_history'] = chat_history
+    chat_history.extend(["", result])
+    st.session_state['previous_response'] = ""
+
+
 input = st.chat_input("Say hi to start a new conversation")
 if input:
     welcome_prompt = get_the_welcome_prompt(input)
@@ -111,7 +122,7 @@ if input:
     try:
         service_info = serv_ext.get_service_info(response)
     except Exception as ex:
-        chat_history.extend([input, "Error while calling the AI model, the server might be down, try later"])
+        reset_chat_history(AI_ERROR_MSG)
         print("Error while calling the model", ex)
 
     print("service_info = ", service_info)
@@ -122,25 +133,12 @@ if input:
             service_name = service_info_dict["service_name"]
             if re.search("[Ll]ogin", service_name):
                 result = process_login(service_info_dict)
-                if result == "Success":
-                    chat_history = []
-                    chat_history.extend([input, "Authentication successfully completed. "
-                                                "Say hi to start a new conversation."])
-                    st.session_state['chat_history'] = chat_history
-                else:
-                    chat_history.extend([input, result])
+                reset_chat_history(result)
             else:
                 result = create_new_account(service_info_dict)
+                reset_chat_history(result)
 
-                if result == "Success":
-                    print("result******************************************************", result)
-                    chat_history = []
-                    chat_history.extend([input, "Congratulation for the creation of your new account. "
-                                                "Say hi to start a new conversation"])
-                    st.session_state['chat_history'] = chat_history
-                else:
-                    chat_history.extend([input, result])
         else:
-            chat_history.extend([input, "Error while parsing the service information"])
+            reset_chat_history(PARSING_SERVICE_INFO_ERROR_MSG)
 
     display_chat_history()

@@ -10,11 +10,11 @@ from utilities import hash_password
 login_microservice_url = "http://127.0.0.1:8080/login"
 
 IMAGE_ISSUES_MSG = ("You did not pass the image verification process. Please ensure that your camera is activated,"
-                    "and that you are looking directly at it before attempting again")
+                    "and that you are looking directly at it before attempting again. Say hi to restart")
 
-CREDENTIALS_ERROR_MSG = "Invalid username or password"
-AUTHENTICATION_ERROR_MSG = "Error during the authentication process. Please, try again later"
-SUCCESSFUL_MSG = "Success"
+CREDENTIALS_ERROR_MSG = "Invalid username or password. Say hi to restart"
+AUTHENTICATION_ERROR_MSG = "Error during the authentication process. Please, try again later. Say hi to restart"
+SUCCESSFUL_MSG = "Authentication successfully completed.Say hi to start a new conversation."
 
 
 def image_verification():
@@ -24,7 +24,8 @@ def image_verification():
     cam = VideoCapture(0)
     result, image = cam.read()
     if result:
-        local_image = cv2.imread("UserManagmentSys/images/armel.png")
+        username = st.session_state["username"]
+        local_image = cv2.imread(f"UserManagmentSys/images/{username}.png")
         s = ssim(local_image, image, channel_axis=2)
         print("similarity  ", s)
         if s > 0.60:
@@ -38,14 +39,16 @@ def image_verification():
 def user_authentication(username, password):
     hashed_password = hash_password(password)
     response = requests.get(login_microservice_url,
-                            json={'username': f"""{username}""", 'password': f"""{hashed_password}"""})
+                            json={'username': f"{username}", 'password': f"{hashed_password}"})
     return response
 
 
 def process_login(login_info_dict):
     print("process_login START")
+    username = login_info_dict["parameters"]["username"]
+    if username:
+        st.session_state['username'] = username
     if image_verification():
-        username = login_info_dict["parameters"]["username"]
         password = login_info_dict["parameters"]["password"]
         if username and password:
             try:
